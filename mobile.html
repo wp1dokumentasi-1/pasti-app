@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Validasi Serah Terima - PASTI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Mencegah layar ikut ter-scroll saat user mencoret tanda tangan di HP */
+        canvas { touch-action: none; }
+        
+        /* Tambahan styling agar rapi saat dilihat di layar desktop/editor */
+        body { 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            background-color: #f3f4f6; 
+            padding: 0;
+            margin: 0;
+        }
+        .mobile-container { 
+            width: 100%; 
+            max-width: 400px; 
+            background: white; 
+            min-height: 100vh; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow-x: hidden; 
+        }
+    </style>
+</head>
+<body class="text-gray-800 font-sans">
+    
+    <!-- PANEL SIMULATOR (Di dunia nyata ini disembunyikan, diatur oleh URL Parameter) -->
+    <div class="w-full max-w-[400px] bg-slate-900 p-2.5 flex flex-col gap-2 shadow-xl z-50">
+        <p class="text-[10px] text-slate-400 text-center font-bold uppercase tracking-wider">Simulasi Klik Link (URL Parameter)</p>
+        <div class="flex justify-between gap-1 text-[10px] sm:text-xs font-bold">
+            <button onclick="changeRole('qc')" id="tab-qc" class="flex-1 bg-slate-700 text-slate-300 py-2 rounded transition-colors border border-slate-600">1. QC</button>
+            <button onclick="changeRole('produksi')" id="tab-produksi" class="flex-1 bg-slate-700 text-slate-300 py-2 rounded transition-colors border border-slate-600">2. Produksi</button>
+            <button onclick="changeRole('driver')" id="tab-driver" class="flex-1 bg-slate-700 text-slate-300 py-2 rounded transition-colors border border-slate-600">3. Driver</button>
+            <button onclick="changeRole('penerima')" id="tab-penerima" class="flex-1 bg-blue-500 text-white py-2 rounded transition-colors border border-blue-400 shadow-inner">4. Penerima</button>
+        </div>
+    </div>
+
+    <div class="mobile-container pb-10">
+        <!-- Header -->
+        <header id="app-header" class="bg-blue-900 text-white p-4 shadow-md text-center relative transition-colors duration-300">
+            <h1 id="header-title" class="text-lg font-bold tracking-wide">Serah Terima Proyek</h1>
+            <p id="header-subtitle" class="text-xs text-blue-200">Verifikasi Penerima Akhir</p>
+        </header>
+
+        <main class="p-5">
+            <!-- Informasi Surat Jalan (Statis) -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
+                <div class="flex justify-between items-center mb-1">
+                    <span id="label_doc_no" class="text-xs font-bold text-gray-500 uppercase tracking-wider">No. SPtB</span>
+                    <span id="badge-status" class="bg-blue-200 text-blue-800 text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider">Arrived</span>
+                </div>
+                <input type="text" id="doc_no" value="SPtB-2609-001" class="text-xl font-bold text-blue-900 bg-transparent border-b border-blue-300 w-full outline-none pb-1 mb-3" readonly>
+                
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                        <p class="text-gray-500 text-[11px] uppercase">No. Polisi</p>
+                        <p class="font-semibold text-gray-800">BK 8250 SK</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-[11px] uppercase">Pengemudi</p>
+                        <p class="font-semibold text-gray-800">Hendra Saputra</p>
+                    </div>
+                    <div class="col-span-2">
+                        <p class="text-gray-500 text-[11px] uppercase">Rincian Muatan</p>
+                        <p class="font-semibold text-gray-800 text-xs mt-0.5">10 Btg - Spun Pile ∅ 500 mm, L=12m</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="deliveryForm" class="space-y-5">
+                
+                <!-- AREA 1: TIM QC -->
+                <div id="form-qc" class="hidden space-y-4 animate-fade-in">
+                    <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Hasil Inspeksi Mutu <span class="text-red-500">*</span></label>
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="qc_status" value="Lolos QC" class="w-4 h-4 text-yellow-600 focus:ring-yellow-500" checked>
+                                <span class="text-sm font-semibold">Lolos Uji Mutu (Passed)</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="qc_status" value="Gagal QC" class="w-4 h-4 text-red-600 focus:ring-red-500">
+                                <span class="text-sm font-semibold text-red-600">Ditemukan Cacat / Reject</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AREA 2: ADM PRODUKSI -->
+                <div id="form-produksi" class="hidden space-y-4 animate-fade-in">
+                    <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Verifikasi Jumlah Muatan <span class="text-red-500">*</span></label>
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="prod_status" value="Sesuai" class="w-4 h-4 text-green-600 focus:ring-green-500" checked>
+                                <span class="text-sm font-semibold">Sesuai dengan Rencana SPtB</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="prod_status" value="Tidak Sesuai" class="w-4 h-4 text-red-600 focus:ring-red-500">
+                                <span class="text-sm font-semibold text-red-600">Tidak Sesuai (Hold)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AREA 3: DRIVER / PENGEMUDI -->
+                <div id="form-driver" class="hidden space-y-4 animate-fade-in">
+                    <div class="p-3 bg-slate-100 border border-slate-300 rounded-lg">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Pernyataan Pengemudi <span class="text-red-500">*</span></label>
+                        <label class="flex items-start gap-2 cursor-pointer">
+                            <input type="checkbox" id="driver_check" class="w-5 h-5 text-slate-800 rounded mt-0.5" checked>
+                            <span class="text-xs text-gray-600 font-medium">Saya, Hendra Saputra, menyatakan telah menerima dokumen dan fisik muatan dalam kondisi aman. Armada siap diberangkatkan ke tujuan.</span>
+                        </label>
+                    </div>
+
+                    <!-- FOTO SEBELUM BERANGKAT -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Upload Foto Muatan <span class="text-red-500">*</span></label>
+                        <p class="text-[10px] text-gray-500 mb-2">Ambil foto fisik tiang yang sudah dimuat di atas truk sebelum berangkat.</p>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="foto_driver" class="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                                <div class="flex flex-col items-center justify-center pt-3 pb-4">
+                                    <i class="fas fa-camera text-gray-400 text-2xl mb-1"></i>
+                                    <p class="text-[10px] text-gray-500 font-semibold" id="foto_driver_label">Ambil Foto Muatan di Truk</p>
+                                </div>
+                                <input id="foto_driver" type="file" accept="image/*" capture="environment" class="hidden" onchange="updatePhotoLabel(this, 'foto_driver_label')" />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AREA 4: PENERIMA SITE (Form Default Sebelumnya) -->
+                <div id="form-penerima" class="space-y-5 animate-fade-in">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Nama Penerima <span class="text-red-500">*</span></label>
+                        <input type="text" id="nama_penerima" class="w-full border border-gray-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Nama lengkap mandor/penerima">
+                    </div>
+
+                    <div class="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Kondisi Tiang Pancang <span class="text-red-500">*</span></label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="kondisi_terima" value="Baik" class="w-4 h-4 text-blue-600 focus:ring-blue-500" checked>
+                                <span class="text-sm font-semibold">Utuh & Baik</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="kondisi_terima" value="Ada Cacat" class="w-4 h-4 text-red-600 focus:ring-red-500">
+                                <span class="text-sm font-semibold text-red-600">Ada Cacat/Reject</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Catatan Penerimaan</label>
+                        <textarea id="catatan" rows="2" class="w-full border border-gray-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white" placeholder="Opsional: Tulis jika ada retak, gompel, dll..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Upload Foto Bukti <span class="text-red-500">*</span></label>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="foto_barang" class="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                                <div class="flex flex-col items-center justify-center pt-3 pb-4">
+                                    <i class="fas fa-camera text-gray-400 text-2xl mb-1"></i>
+                                    <p class="text-[10px] text-gray-500 font-semibold" id="foto_label">Ambil Foto Fisik Tiang di Truk</p>
+                                </div>
+                                <input id="foto_barang" type="file" accept="image/*" capture="environment" class="hidden" onchange="updatePhotoLabel(this, 'foto_label')" />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AREA TANDA TANGAN BERSAMA -->
+                <div class="mt-4 border-t pt-4">
+                    <label id="label-ttd" class="block text-sm font-bold text-gray-700 mb-2">Tanda Tangan Penerima Site <span class="text-red-500">*</span></label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 overflow-hidden relative group hover:border-blue-400 transition-colors">
+                        <canvas id="sigCanvas" class="w-full h-40 cursor-crosshair"></canvas>
+                        <div class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-10">
+                            <i class="fas fa-pen-nib text-5xl"></i>
+                        </div>
+                        <button type="button" onclick="clearCanvas()" class="absolute bottom-2 right-2 bg-white text-red-500 border border-red-200 text-[10px] px-2 py-1 rounded shadow-sm hover:bg-red-50 font-bold z-10">
+                            <i class="fas fa-eraser"></i> Hapus
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="button" id="submitBtn" onclick="submitKonfirmasi()" class="w-full bg-blue-600 text-white font-bold rounded-lg px-4 py-3.5 shadow-md hover:bg-blue-700 active:scale-95 flex justify-center items-center transition-all">
+                        <i class="fas fa-check-circle mr-2"></i> Konfirmasi Serah Terima
+                    </button>
+                </div>
+            </form>
+            
+            <div id="previewArea"></div>
+        </main>
+    </div>
+
+    <script>
+        // --- LOGIKA PERGANTIAN ROLE (SIMULASI PARAMETER) ---
+        let currentRole = 'penerima';
+
+        function changeRole(role) {
+            currentRole = role;
+            
+            // 1. Reset Tampilan Tab Simulator
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.className = "flex-1 bg-slate-700 text-slate-300 py-2 rounded transition-colors border border-slate-600";
+            });
+            document.getElementById(`tab-${role}`).className = "flex-1 bg-blue-500 text-white py-2 rounded transition-colors border border-blue-400 shadow-inner";
+
+            // 2. Sembunyikan semua area form khusus
+            document.getElementById('form-qc').classList.add('hidden');
+            document.getElementById('form-produksi').classList.add('hidden');
+            document.getElementById('form-driver').classList.add('hidden');
+            document.getElementById('form-penerima').classList.add('hidden');
+
+            // 3. Update Header, Badge, dan Form Sesuai Role
+            const header = document.getElementById('app-header');
+            const title = document.getElementById('header-title');
+            const subtitle = document.getElementById('header-subtitle');
+            const badge = document.getElementById('badge-status');
+            const labelTtd = document.getElementById('label-ttd');
+            const submitBtn = document.getElementById('submitBtn');
+            const docLabel = document.getElementById('label_doc_no');
+            const docInput = document.getElementById('doc_no');
+
+            document.getElementById(`form-${role}`).classList.remove('hidden');
+            clearCanvas(); // Bersihkan TTD sebelumnya
+            document.getElementById('previewArea').innerHTML = ''; // Bersihkan log sukses
+
+            if(role === 'qc') {
+                docLabel.innerText = "No. SPM (Permintaan Muat)"; docInput.value = "SPM-2609-001";
+                header.className = "bg-yellow-600 text-white p-4 shadow-md text-center relative transition-colors duration-300";
+                title.innerText = "Inspeksi Mutu (QC)";
+                subtitle.innerText = "Bpk. Bambang Wijaya";
+                badge.innerText = "Loading"; badge.className = "bg-yellow-200 text-yellow-800 text-[10px] px-2 py-1 rounded-full font-bold uppercase";
+                labelTtd.innerHTML = "Tanda Tangan QC Pabrik <span class='text-red-500'>*</span>";
+                submitBtn.innerHTML = "<i class='fas fa-shield-alt mr-2'></i> Sahkan Kualitas Produk";
+                submitBtn.className = "w-full bg-yellow-600 text-white font-bold rounded-lg px-4 py-3.5 shadow-md hover:bg-yellow-700 active:scale-95 flex justify-center items-center transition-all";
+            
+            } else if(role === 'produksi') {
+                docLabel.innerText = "No. SPM (Permintaan Muat)"; docInput.value = "SPM-2609-001";
+                header.className = "bg-green-700 text-white p-4 shadow-md text-center relative transition-colors duration-300";
+                title.innerText = "Verifikasi Produksi";
+                subtitle.innerText = "Bpk. Ahmad Ridwan";
+                badge.innerText = "Loading"; badge.className = "bg-yellow-200 text-yellow-800 text-[10px] px-2 py-1 rounded-full font-bold uppercase";
+                labelTtd.innerHTML = "Tanda Tangan Adm. Produksi <span class='text-red-500'>*</span>";
+                submitBtn.innerHTML = "<i class='fas fa-clipboard-check mr-2'></i> Sahkan Pengeluaran Barang";
+                submitBtn.className = "w-full bg-green-700 text-white font-bold rounded-lg px-4 py-3.5 shadow-md hover:bg-green-800 active:scale-95 flex justify-center items-center transition-all";
+            
+            } else if(role === 'driver') {
+                docLabel.innerText = "No. SPtB (Surat Pengantar Barang)"; docInput.value = "SPtB-2609-001";
+                header.className = "bg-slate-800 text-white p-4 shadow-md text-center relative transition-colors duration-300";
+                title.innerText = "Konfirmasi Muatan";
+                subtitle.innerText = "Driver: Hendra Saputra";
+                badge.innerText = "Ready"; badge.className = "bg-slate-200 text-slate-800 text-[10px] px-2 py-1 rounded-full font-bold uppercase";
+                labelTtd.innerHTML = "Tanda Tangan Pengemudi <span class='text-red-500'>*</span>";
+                submitBtn.innerHTML = "<i class='fas fa-truck-fast mr-2'></i> Mulai Perjalanan (Berangkat)";
+                submitBtn.className = "w-full bg-slate-800 text-white font-bold rounded-lg px-4 py-3.5 shadow-md hover:bg-slate-900 active:scale-95 flex justify-center items-center transition-all";
+            
+            } else {
+                docLabel.innerText = "No. SPtB (Surat Pengantar Barang)"; docInput.value = "SPtB-2609-001";
+                header.className = "bg-blue-900 text-white p-4 shadow-md text-center relative transition-colors duration-300";
+                title.innerText = "Serah Terima Proyek";
+                subtitle.innerText = "Verifikasi Penerima Akhir";
+                badge.innerText = "Arrived"; badge.className = "bg-blue-200 text-blue-800 text-[10px] px-2 py-1 rounded-full font-bold uppercase";
+                labelTtd.innerHTML = "Tanda Tangan Penerima Site <span class='text-red-500'>*</span>";
+                submitBtn.innerHTML = "<i class='fas fa-check-circle mr-2'></i> Konfirmasi Serah Terima";
+                submitBtn.className = "w-full bg-blue-600 text-white font-bold rounded-lg px-4 py-3.5 shadow-md hover:bg-blue-700 active:scale-95 flex justify-center items-center transition-all";
+            }
+        }
+
+        // --- LOGIKA CANVAS TANDA TANGAN (SAMA SPT SEBELUMNYA) ---
+        const canvas = document.getElementById('sigCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width; canvas.height = 160;
+            ctx.strokeStyle = '#1e3a8a'; ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        }
+        window.addEventListener('resize', resizeCanvas);
+        setTimeout(resizeCanvas, 100);
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function startPosition(e) { isDrawing = true; draw(e); e.preventDefault(); }
+        function endPosition() { isDrawing = false; ctx.beginPath(); }
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        canvas.addEventListener('mousedown', startPosition); canvas.addEventListener('mouseup', endPosition); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseout', endPosition);
+        canvas.addEventListener('touchstart', startPosition, {passive: false}); canvas.addEventListener('touchend', endPosition); canvas.addEventListener('touchmove', draw, {passive: false}); canvas.addEventListener('touchcancel', endPosition);
+
+        function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+        function updatePhotoLabel(input, labelId) {
+            const label = document.getElementById(labelId);
+            if (input.files && input.files[0]) label.innerHTML = `<span class="text-blue-600 font-bold"><i class="fas fa-check"></i> ${input.files[0].name}</span>`;
+            else label.innerHTML = "Ambil Foto Fisik";
+        }
+
+        // --- LOGIKA SUBMIT BERDASARKAN ROLE ---
+        function submitKonfirmasi() {
+            // Validasi TTD Kosong
+            const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
+            if (canvas.toDataURL() === blank.toDataURL()) return showMessage('Tanda tangan tidak boleh kosong!', true);
+
+            let payload = {
+                no_dokumen: document.getElementById('doc_no').value,
+                role: currentRole,
+                nama: '-',
+                status: '-',
+                catatan: '-',
+                signature: canvas.toDataURL('image/png')
+            };
+
+            let logData = "";
+            let btnColor = "";
+
+            if(currentRole === 'qc') {
+                const stat = document.querySelector('input[name="qc_status"]:checked').value;
+                payload.nama = 'Tim QC';
+                payload.status = stat;
+                logData = `<p><span class="text-slate-500">Status QC:</span> <b>${stat}</b></p>`;
+                btnColor = "text-yellow-700 bg-yellow-50 border-yellow-300";
+            
+            } else if(currentRole === 'produksi') {
+                const stat = document.querySelector('input[name="prod_status"]:checked').value;
+                payload.nama = 'Adm Produksi';
+                payload.status = stat;
+                logData = `<p><span class="text-slate-500">Kesesuaian:</span> <b>${stat}</b></p>`;
+                btnColor = "text-green-700 bg-green-50 border-green-300";
+            
+            } else if(currentRole === 'driver') {
+                if(!document.getElementById('driver_check').checked) return showMessage('Centang pernyataan kesiapan armada!', true);
+                
+                const fotoDriver = document.getElementById('foto_driver').files[0];
+                if(!fotoDriver) return showMessage('Wajib upload foto muatan sebelum berangkat!', true);
+
+                payload.nama = 'Driver Truk';
+                payload.status = 'Berangkat';
+                // Dalam implementasi nyata, fotoDriver dikonversi ke base64 juga, di sini disederhanakan
+                payload.catatan = 'Foto Terlampir';
+
+                logData = `<p><span class="text-slate-500">Status:</span> <b>Kendaraan Berangkat</b></p><p><span class="text-slate-500">Foto Muatan:</span> Terlampir</p>`;
+                btnColor = "text-slate-700 bg-slate-50 border-slate-300";
+            
+            } else if(currentRole === 'penerima') {
+                const nama = document.getElementById('nama_penerima').value;
+                if(!nama) return showMessage('Isi Nama Penerima!', true);
+                const foto = document.getElementById('foto_barang').files[0];
+                if(!foto) return showMessage('Wajib upload foto tiang!', true);
+                
+                const stat = document.querySelector('input[name="kondisi_terima"]:checked').value;
+                const cat = document.getElementById('catatan').value || '-';
+                
+                payload.nama = nama;
+                payload.status = stat;
+                payload.catatan = cat;
+
+                logData = `<p><span class="text-slate-500">Penerima:</span> <b>${nama}</b></p><p><span class="text-slate-500">Kondisi:</span> <b>${stat}</b></p><p><span class="text-slate-500">Catatan:</span> ${cat}</p>`;
+                btnColor = "text-blue-700 bg-blue-50 border-blue-300";
+            }
+
+            // --- PROSES PENGIRIMAN DATA KE GOOGLE SHEETS ---
+            
+            const btn = document.getElementById('submitBtn');
+            const originalBtnText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Mengirim Data...`;
+            btn.disabled = true;
+
+            // =========================================================================
+            // UBAH TEKS DI BAWAH INI DENGAN URL APPS SCRIPT DARI GOOGLE SHEETS ANDA
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbzV-huVjt5AWZwDFQ4mY6enZ4ZROEJIzVUsqZnplBVF8dcW6f02jOjEVH30xjU2Fp0t/exec'; 
+            // =========================================================================
+
+            if(scriptURL === 'MASUKKAN_URL_GOOGLE_SCRIPT_ANDA_DISINI') {
+                // Jika belum diganti URL-nya, tampilkan simulasi saja
+                setTimeout(() => {
+                    tampilkanSuksesSimulasi(logData, btnColor, payload.signature);
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                }, 1000);
+            } else {
+                // Proses fetch asli ke Google Sheets
+                fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Penting untuk bypass error CORS di browser
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    tampilkanSuksesSimulasi(logData, btnColor, payload.signature);
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                    showMessage('Data Berhasil Disimpan ke Excel!', false);
+                })
+                .catch(error => {
+                    console.error('Error!', error.message);
+                    showMessage('Gagal mengirim data. Coba lagi.', true);
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                });
+            }
+        }
+
+        function tampilkanSuksesSimulasi(logData, btnColor, signatureData) {
+            document.getElementById('previewArea').innerHTML = `
+                <div class="mt-4 p-4 border rounded-lg ${btnColor}">
+                    <h4 class="font-bold text-sm mb-2"><i class="fas fa-check-circle"></i> Data Terkirim ke Server</h4>
+                    <div class="text-xs space-y-1 mb-2 bg-white p-2 rounded">${logData}</div>
+                    <p class="text-xs font-semibold">Tanda Tangan Tersimpan:</p>
+                    <img src="${signatureData}" class="h-16 mt-1 border bg-white rounded p-1">
+                </div>
+            `;
+            document.getElementById('previewArea').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showMessage(msg, isError) {
+            // Simulasi alert sederhana
+            const div = document.createElement('div');
+            div.className = `fixed top-12 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded shadow-lg text-white font-bold text-xs z-[100] ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            div.innerText = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2500);
+        }
+    </script>
+</body>
+</html>
