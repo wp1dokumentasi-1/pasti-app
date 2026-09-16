@@ -429,10 +429,10 @@
         function eksekusiKirimKeGoogle(payload, btn, originalBtnText, logData, btnColor) {
             // =========================================================================
             // UBAH TEKS DI BAWAH INI DENGAN URL APPS SCRIPT DARI GOOGLE SHEETS ANDA
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbzy_bCZ3XfZo1QEp6J19AbAjibJuB5H1r_nI4QQpf657-GrxMoXVV-a5VCTjKFNyV9a/exec'; 
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbwXqbNJpZpV4uL9eueLCXCe2hSRfixcVkeHdhTJfdiJwK1K02XDYQB_rVsDR7RwZ0Am/exec'; 
             // =========================================================================
 
-            if(scriptURL === 'https://script.google.com/macros/s/AKfycbzy_bCZ3XfZo1QEp6J19AbAjibJuB5H1r_nI4QQpf657-GrxMoXVV-a5VCTjKFNyV9a/exec') {
+            if(scriptURL === 'https://script.google.com/macros/s/AKfycbwXqbNJpZpV4uL9eueLCXCe2hSRfixcVkeHdhTJfdiJwK1K02XDYQB_rVsDR7RwZ0Am/exec') {
                 // Jika belum diganti URL-nya, tampilkan simulasi saja
                 setTimeout(() => {
                     tampilkanSuksesSimulasi(logData, btnColor, payload.signature);
@@ -443,19 +443,26 @@
                 // Proses fetch asli ke Google Sheets
                 fetch(scriptURL, {
                     method: 'POST',
-                    mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' },
+                    redirect: 'follow', // Penting agar Google Script bisa merespons dengan benar
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Pakai text/plain untuk melewati blokir keamanan browser (CORS)
                     body: JSON.stringify(payload)
                 })
-                .then(response => {
-                    tampilkanSuksesSimulasi(logData, btnColor, payload.signature);
+                .then(response => response.json())
+                .then(data => {
+                    if (data.result === 'success') {
+                        tampilkanSuksesSimulasi(logData, btnColor, payload.signature);
+                        showMessage('Data & Foto Berhasil Disimpan ke Server!', false);
+                    } else {
+                        // Jika gagal, akan muncul kotak merah berisi alasannya
+                        console.error('Error dari Server:', data.error);
+                        showMessage('Gagal menyimpan: ' + data.error, true);
+                    }
                     btn.innerHTML = originalBtnText;
                     btn.disabled = false;
-                    showMessage('Data Berhasil Disimpan ke Excel!', false);
                 })
                 .catch(error => {
-                    console.error('Error!', error.message);
-                    showMessage('Gagal mengirim data. Coba lagi.', true);
+                    console.error('Error Jaringan:', error.message);
+                    showMessage('Gagal mengirim data. Cek koneksi internet.', true);
                     btn.innerHTML = originalBtnText;
                     btn.disabled = false;
                 });
