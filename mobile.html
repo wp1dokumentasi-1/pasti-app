@@ -329,11 +329,13 @@
                 nama: '-',
                 status: '-',
                 catatan: '-',
-                signature: canvas.toDataURL('image/png')
+                signature: canvas.toDataURL('image/png'),
+                foto: null // Tambahan tempat menampung foto
             };
 
             let logData = "";
             let btnColor = "";
+            let fotoFisik = null; // Variabel untuk mendeteksi apakah ada foto
 
             if(currentRole === 'qc') {
                 const stat = document.querySelector('input[name="qc_status"]:checked').value;
@@ -354,10 +356,10 @@
                 
                 const fotoDriver = document.getElementById('foto_driver').files[0];
                 if(!fotoDriver) return showMessage('Wajib upload foto muatan sebelum berangkat!', true);
+                fotoFisik = fotoDriver; // Simpan file foto driver
 
                 payload.nama = 'Driver Truk';
                 payload.status = 'Berangkat';
-                // Dalam implementasi nyata, fotoDriver dikonversi ke base64 juga, di sini disederhanakan
                 payload.catatan = 'Foto Terlampir';
 
                 logData = `<p><span class="text-slate-500">Status:</span> <b>Kendaraan Berangkat</b></p><p><span class="text-slate-500">Foto Muatan:</span> Terlampir</p>`;
@@ -368,6 +370,7 @@
                 if(!nama) return showMessage('Isi Nama Penerima!', true);
                 const foto = document.getElementById('foto_barang').files[0];
                 if(!foto) return showMessage('Wajib upload foto tiang!', true);
+                fotoFisik = foto; // Simpan file foto penerima
                 
                 const stat = document.querySelector('input[name="kondisi_terima"]:checked').value;
                 const cat = document.getElementById('catatan').value || '-';
@@ -380,16 +383,36 @@
                 btnColor = "text-blue-700 bg-blue-50 border-blue-300";
             }
 
-            // --- PROSES PENGIRIMAN DATA KE GOOGLE SHEETS ---
+            // --- PROSES UBAH FOTO KE BASE64 & KIRIM ---
             
             const btn = document.getElementById('submitBtn');
             const originalBtnText = btn.innerHTML;
             btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Mengirim Data...`;
             btn.disabled = true;
 
+            // Jika role punya upload foto (Driver/Penerima), ubah dulu foto jadi base64
+            if (fotoFisik) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    payload.foto = {
+                        name: fotoFisik.name,
+                        type: fotoFisik.type,
+                        base64: event.target.result.split(',')[1] // Ambil kode gambarnya saja
+                    };
+                    eksekusiKirimKeGoogle(payload, btn, originalBtnText, logData, btnColor);
+                };
+                reader.readAsDataURL(fotoFisik);
+            } else {
+                // Jika QC / Produksi (tanpa foto fisik) langsung kirim
+                eksekusiKirimKeGoogle(payload, btn, originalBtnText, logData, btnColor);
+            }
+        }
+
+        // Fungsi khusus untuk mengirim data ke Google
+        function eksekusiKirimKeGoogle(payload, btn, originalBtnText, logData, btnColor) {
             // =========================================================================
             // UBAH TEKS DI BAWAH INI DENGAN URL APPS SCRIPT DARI GOOGLE SHEETS ANDA
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbzV-huVjt5AWZwDFQ4mY6enZ4ZROEJIzVUsqZnplBVF8dcW6f02jOjEVH30xjU2Fp0t/exec'; 
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbyW-ag5RT4MXaWw-9xeig3RA94tatvSPiYN8fUv6gN5iiZAKAPKiWSdoAMZVy5y5B7N/exec'; 
             // =========================================================================
 
             if(scriptURL === 'MASUKKAN_URL_GOOGLE_SCRIPT_ANDA_DISINI') {
@@ -403,10 +426,8 @@
                 // Proses fetch asli ke Google Sheets
                 fetch(scriptURL, {
                     method: 'POST',
-                    mode: 'no-cors', // Penting untuk bypass error CORS di browser
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 })
                 .then(response => {
