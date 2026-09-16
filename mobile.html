@@ -394,12 +394,29 @@
             if (fotoFisik) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    payload.foto = {
-                        name: fotoFisik.name,
-                        type: fotoFisik.type,
-                        base64: event.target.result.split(',')[1] // Ambil kode gambarnya saja
-                    };
-                    eksekusiKirimKeGoogle(payload, btn, originalBtnText, logData, btnColor);
+                    // FITUR BARU: Kompresi Gambar Otomatis sebelum dikirim
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvasKompresi = document.createElement('canvas');
+                        const MAX_WIDTH = 800; // Maksimal lebar foto 800px agar ringan
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvasKompresi.width = MAX_WIDTH;
+                        canvasKompresi.height = img.height * scaleSize;
+                        
+                        const ctxKompresi = canvasKompresi.getContext('2d');
+                        ctxKompresi.drawImage(img, 0, 0, canvasKompresi.width, canvasKompresi.height);
+                        
+                        // Ubah jadi JPEG dengan kualitas 70%
+                        const dataUrlCompressed = canvasKompresi.toDataURL('image/jpeg', 0.7);
+                        
+                        payload.foto = {
+                            name: "foto_" + new Date().getTime() + ".jpg",
+                            type: 'image/jpeg',
+                            base64: dataUrlCompressed.split(',')[1] // Ambil kode gambarnya saja
+                        };
+                        eksekusiKirimKeGoogle(payload, btn, originalBtnText, logData, btnColor);
+                    }
+                    img.src = event.target.result;
                 };
                 reader.readAsDataURL(fotoFisik);
             } else {
@@ -412,7 +429,7 @@
         function eksekusiKirimKeGoogle(payload, btn, originalBtnText, logData, btnColor) {
             // =========================================================================
             // UBAH TEKS DI BAWAH INI DENGAN URL APPS SCRIPT DARI GOOGLE SHEETS ANDA
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbyW-ag5RT4MXaWw-9xeig3RA94tatvSPiYN8fUv6gN5iiZAKAPKiWSdoAMZVy5y5B7N/exec'; 
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbw0-PvFV3fZ97rCsjopNnwdQdhmUgP_DwIzVCbAX-GA76e1tZAWYu-W5MX-kzw1FmZB/exec'; 
             // =========================================================================
 
             if(scriptURL === 'MASUKKAN_URL_GOOGLE_SCRIPT_ANDA_DISINI') {
