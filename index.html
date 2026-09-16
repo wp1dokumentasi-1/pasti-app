@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin Distribusi - PASTI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* A4 Print Styles */
+        @media print {
+            body * { visibility: hidden; }
+            #printableArea, #printableArea * { visibility: visible; }
+            #printableArea { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; box-shadow: none; }
+            .no-print { display: none !important; }
+            @page { size: A4; margin: 1cm; }
+        }
+        
+        /* Shopee-style Timeline line */
+        .timeline-line::before {
+            content: ''; position: absolute; left: 11px; top: 24px; bottom: 0; width: 2px; background-color: #e2e8f0; z-index: 0;
+        }
+        .timeline-item:last-child .timeline-line::before { display: none; }
+    </style>
+</head>
+<body class="text-slate-800 bg-slate-50">
+
+    <!-- HALAMAN LOGIN (Tampil Pertama Kali) -->
+    <div id="login-page" class="flex h-screen items-center justify-center bg-slate-900 relative overflow-hidden">
+        <!-- Background Decoration -->
+        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-cyan-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+            <div class="bg-blue-600 p-8 text-center">
+                <h1 class="text-4xl font-extrabold text-white tracking-wider mb-2">PASTI</h1>
+                <p class="text-blue-200 text-sm font-medium">Pengiriman Aman Sistem Terdigitalisasi</p>
+            </div>
+            <div class="p-8">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6 text-center">Login Admin Distribusi</h2>
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-600 mb-1">NIP / Username</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-user text-slate-400"></i>
+                            </div>
+                            <input type="text" value="admin.distribusi" required class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50" placeholder="Masukkan NIP Anda">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-600 mb-1">Password</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-slate-400"></i>
+                            </div>
+                            <input type="password" value="password123" required class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50" placeholder="••••••••">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-colors flex justify-center items-center mt-4">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Masuk ke Dashboard
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP DASHBOARD (Sembunyi sebelum login) -->
+    <div id="main-app" class="hidden h-screen w-full overflow-hidden flex-row">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-slate-900 text-white flex flex-col shadow-xl z-20">
+            <div class="p-6 border-b border-slate-800 text-center">
+                <h1 class="text-3xl font-black text-white tracking-widest">PASTI</h1>
+                <p class="text-xs text-slate-400 mt-1">WIKA Beton SA I</p>
+            </div>
+            
+            <div class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 px-4">Menu Utama</p>
+                
+                <button id="nav-dashboard" onclick="switchTab('dashboard')" class="w-full flex items-center px-4 py-3 bg-blue-600 text-white rounded-lg transition-colors font-semibold text-sm">
+                    <i class="fas fa-chart-line w-6"></i> Dashboard Monitoring
+                </button>
+                
+                <button id="nav-input" onclick="switchTab('input')" class="w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors font-semibold text-sm">
+                    <i class="fas fa-file-signature w-6"></i> Buat SPM Baru
+                </button>
+
+                <div class="pt-6 mt-6 border-t border-slate-800">
+                    <button class="w-full flex items-center px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-sm">
+                        <i class="fas fa-cog w-6"></i> Pengaturan
+                    </button>
+                    <button onclick="window.location.reload()" class="w-full flex items-center px-4 py-3 text-red-400 hover:text-red-300 hover:bg-slate-800 rounded-lg transition-colors text-sm mt-1">
+                        <i class="fas fa-sign-out-alt w-6"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 relative">
+            
+            <!-- Topbar -->
+            <header class="bg-white h-16 border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
+                <h2 id="pageTitle" class="text-xl font-bold text-slate-800">Monitor Pengiriman Berjalan</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right hidden md:block">
+                        <p class="text-sm font-bold text-slate-700">Admin Distribusi</p>
+                        <p class="text-xs text-slate-500">PCP Sumatera Utara</p>
+                    </div>
+                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-lg border-2 border-blue-200">
+                        A
+                    </div>
+                </div>
+            </header>
+
+            <!-- Tab 1: Dashboard Monitoring (Tabel) -->
+            <div id="tab-dashboard" class="flex-1 p-6 overflow-y-auto">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center space-x-4">
+                        <div class="p-3 bg-blue-50 text-blue-500 rounded-lg"><i class="fas fa-file-invoice text-xl"></i></div>
+                        <div><p class="text-sm text-slate-500">Total SPtB Hari Ini</p><p class="text-2xl font-bold text-slate-800">42</p></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center space-x-4">
+                        <div class="p-3 bg-yellow-50 text-yellow-500 rounded-lg"><i class="fas fa-truck-fast text-xl"></i></div>
+                        <div><p class="text-sm text-slate-500">Sedang Di Jalan</p><p class="text-2xl font-bold text-slate-800">18</p></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center space-x-4">
+                        <div class="p-3 bg-green-50 text-green-500 rounded-lg"><i class="fas fa-check-double text-xl"></i></div>
+                        <div><p class="text-sm text-slate-500">Selesai (Terkirim)</p><p class="text-2xl font-bold text-slate-800">24</p></div>
+                    </div>
+                </div>
+
+                <!-- Active Deliveries Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                        <h3 class="font-bold text-slate-700">Daftar Surat Jalan Aktif</h3>
+                        <input type="text" placeholder="Cari SPtB / Driver..." class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-4">No. SPtB</th>
+                                    <th class="p-4">Tujuan Proyek</th>
+                                    <th class="p-4">Armada & Driver</th>
+                                    <th class="p-4">Status Terkini</th>
+                                    <th class="p-4 text-center">Aksi (Monitor/Cetak)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm text-slate-700 divide-y divide-slate-100">
+                                <!-- Data 1 -->
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="p-4 font-bold text-blue-700">SPtB-2609-001</td>
+                                    <td class="p-4">Proyek Tol Trans Sumatera</td>
+                                    <td class="p-4"><p class="font-semibold">PT Lintas Andalas</p><p class="text-xs text-slate-500">BK 8250 SK • Hendra S.</p></td>
+                                    <td class="p-4"><span class="px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200"><i class="fas fa-check mr-1"></i> Terkirim di Site</span></td>
+                                    <td class="p-4 text-center space-x-2">
+                                        <button onclick="openTracker('SPtB-2609-001', 5)" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200" title="Lacak Timeline"><i class="fas fa-search-location"></i></button>
+                                        <button onclick="openPrintPreview()" class="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200" title="Cetak A4 / PDF"><i class="fas fa-print"></i></button>
+                                    </td>
+                                </tr>
+                                <!-- Data 2 -->
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="p-4 font-bold text-blue-700">SPtB-2609-002</td>
+                                    <td class="p-4">Pembangunan Jembatan Wampu</td>
+                                    <td class="p-4"><p class="font-semibold">PT Mitra Beton</p><p class="text-xs text-slate-500">B 9012 KAA • Rahmat H.</p></td>
+                                    <td class="p-4"><span class="px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold border border-yellow-200"><i class="fas fa-truck mr-1"></i> Menuju Lokasi</span></td>
+                                    <td class="p-4 text-center space-x-2">
+                                        <button onclick="openTracker('SPtB-2609-002', 4)" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200" title="Lacak Timeline"><i class="fas fa-search-location"></i></button>
+                                        <button class="p-2 bg-slate-100 text-slate-400 rounded-lg cursor-not-allowed" title="Belum Selesai, Tidak Bisa Cetak"><i class="fas fa-print"></i></button>
+                                    </td>
+                                </tr>
+                                <!-- Data 3 -->
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="p-4 font-bold text-blue-700">SPtB-2609-003</td>
+                                    <td class="p-4">Proyek Pipa Medan</td>
+                                    <td class="p-4"><p class="font-semibold">PT Trans Log</p><p class="text-xs text-slate-500">BK 1111 ZZ • Joko</p></td>
+                                    <td class="p-4"><span class="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200"><i class="fas fa-industry mr-1"></i> TTD Produksi Selesai</span></td>
+                                    <td class="p-4 text-center space-x-2">
+                                        <button onclick="openTracker('SPtB-2609-003', 3)" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200" title="Lacak Timeline"><i class="fas fa-search-location"></i></button>
+                                        <button class="p-2 bg-slate-100 text-slate-400 rounded-lg cursor-not-allowed" title="Belum Selesai, Tidak Bisa Cetak"><i class="fas fa-print"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Input Rencana Pengiriman (Form) -->
+            <div id="tab-input" class="hidden flex-1 p-6 overflow-y-auto">
+                <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Formulir Surat Permintaan Muat (SPM)</h3>
+                    <p class="text-slate-500 text-sm mb-8 border-b pb-4">Silakan lengkapi data administratif armada dan produk sebelum pemuatan fisik di pabrik dilakukan.</p>
+                    
+                    <form class="space-y-6">
+                        <!-- Seksi Armada -->
+                        <div>
+                            <h4 class="font-bold text-blue-700 bg-blue-50 p-2 rounded mb-4"><i class="fas fa-truck mr-2"></i>Informasi Armada & Driver</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Perusahaan Transporter (PT)</label>
+                                    <input type="text" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Contoh: PT Lintas Andalas">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Driver</label>
+                                    <input type="text" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nama lengkap driver">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">No. Polisi (Plat)</label>
+                                    <input type="text" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase" placeholder="Contoh: BK 1234 XX">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">No. Telp / WhatsApp Driver</label>
+                                    <input type="tel" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0812...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seksi Proyek & Produk -->
+                        <div>
+                            <h4 class="font-bold text-blue-700 bg-blue-50 p-2 rounded mb-4 mt-6"><i class="fas fa-building mr-2"></i>Tujuan & Rincian Produk</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Proyek / Tujuan</label>
+                                    <input type="text" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Contoh: Proyek Tol Trans Sumatera Seksi 2">
+                                </div>
+                            </div>
+                            
+                            <!-- List Produk -->
+                            <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                                <div class="grid grid-cols-12 gap-2 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                    <div class="col-span-7">Nama / Tipe Produk</div>
+                                    <div class="col-span-3 text-center">Volume/Qty</div>
+                                    <div class="col-span-2 text-center">Satuan</div>
+                                </div>
+                                <!-- Item 1 -->
+                                <div class="grid grid-cols-12 gap-2 mb-3">
+                                    <div class="col-span-7"><input type="text" value="Spun Pile ∅ 500 mm, Class B, L=12m" class="w-full border border-slate-300 rounded p-2 text-sm bg-white" readonly></div>
+                                    <div class="col-span-3"><input type="number" value="10" class="w-full border border-slate-300 rounded p-2 text-sm bg-white text-center"></div>
+                                    <div class="col-span-2"><input type="text" value="Btg" class="w-full border border-slate-300 rounded p-2 text-sm bg-slate-200 text-center cursor-not-allowed" readonly></div>
+                                </div>
+                                <button type="button" class="text-sm font-semibold text-blue-600 hover:text-blue-800"><i class="fas fa-plus-circle mr-1"></i> Tambah Item Produk</button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4 border-t border-slate-200">
+                            <button type="button" onclick="showToast('Rencana berhasil disimpan! SPM menunggu verifikasi QC dan Produksi.')" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-save mr-2"></i> Buat Rencana Muat (SPM)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL: TRACKING TIMELINE -->
+    <div id="modalTracking" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50 flex justify-center items-center hidden backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b flex justify-between items-center bg-blue-900 text-white rounded-t-2xl">
+                <div>
+                    <h3 class="font-bold text-lg">Lacak Pengiriman</h3>
+                    <p id="track-no-sptb" class="text-xs text-blue-200">SPtB-XXXX-XXX</p>
+                </div>
+                <button onclick="closeModal('modalTracking')" class="text-white hover:text-red-300 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto">
+                <div class="relative timeline-line">
+                    
+                    <!-- Step 5: Diterima Site -->
+                    <div class="timeline-item flex space-x-4 mb-8 relative z-10">
+                        <div id="step-5-icon" class="w-6 h-6 rounded-full flex items-center justify-center bg-slate-200 text-slate-400 border-4 border-white shadow-sm mt-0.5"><i class="fas fa-check text-[10px]"></i></div>
+                        <div class="flex-1">
+                            <h4 id="step-5-title" class="text-sm font-bold text-slate-500">Pesanan Diterima di Proyek</h4>
+                            <p id="step-5-desc" class="text-xs text-slate-400 mt-1">Menunggu konfirmasi penerima di site.</p>
+                            <div id="step-5-data" class="mt-2 text-xs bg-slate-50 border border-slate-100 p-2 rounded hidden">
+                                <p><span class="font-semibold">Kondisi:</span> Sesuai & Baik</p>
+                                <p><span class="font-semibold">Catatan:</span> Aman, bongkar muat lancar.</p>
+                                <p><span class="font-semibold">Penerima:</span> Mandor Proyek (TTD Terlampir)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Berangkat -->
+                    <div class="timeline-item flex space-x-4 mb-8 relative z-10">
+                        <div id="step-4-icon" class="w-6 h-6 rounded-full flex items-center justify-center bg-slate-200 text-slate-400 border-4 border-white shadow-sm mt-0.5"><i class="fas fa-truck text-[10px]"></i></div>
+                        <div class="flex-1">
+                            <h4 id="step-4-title" class="text-sm font-bold text-slate-500">Berangkat dari Pabrik</h4>
+                            <p id="step-4-desc" class="text-xs text-slate-400 mt-1">Driver memverifikasi muatan dan berangkat.</p>
+                            <div id="step-4-data" class="mt-2 text-xs bg-slate-50 border border-slate-100 p-2 rounded hidden">
+                                <p><span class="font-semibold">Waktu:</span> 15 Sep 2026, 09:15 WIB</p>
+                                <p><span class="font-semibold">Driver:</span> Hendra S. (TTD & Foto terlampir)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Verifikasi Produksi -->
+                    <div class="timeline-item flex space-x-4 mb-8 relative z-10">
+                        <div id="step-3-icon" class="w-6 h-6 rounded-full flex items-center justify-center bg-slate-200 text-slate-400 border-4 border-white shadow-sm mt-0.5"><i class="fas fa-clipboard-check text-[10px]"></i></div>
+                        <div class="flex-1">
+                            <h4 id="step-3-title" class="text-sm font-bold text-slate-500">Verifikasi Adm. Produksi (Cetak SPtB)</h4>
+                            <p id="step-3-desc" class="text-xs text-slate-400 mt-1">Memastikan jumlah muat fisik sesuai rencana. SPM resmi menjadi SPtB.</p>
+                            <div id="step-3-data" class="mt-2 text-xs bg-slate-50 border border-slate-100 p-2 rounded hidden">
+                                <p><span class="font-semibold">Status:</span> Valid (Sesuai SPM)</p>
+                                <p><span class="font-semibold">Oleh:</span> Ahmad Ridwan (TTD terlampir)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Verifikasi QC -->
+                    <div class="timeline-item flex space-x-4 mb-8 relative z-10">
+                        <div id="step-2-icon" class="w-6 h-6 rounded-full flex items-center justify-center bg-slate-200 text-slate-400 border-4 border-white shadow-sm mt-0.5"><i class="fas fa-shield-alt text-[10px]"></i></div>
+                        <div class="flex-1">
+                            <h4 id="step-2-title" class="text-sm font-bold text-slate-500">Inspeksi Tim QC</h4>
+                            <p id="step-2-desc" class="text-xs text-slate-400 mt-1">Pengecekan kualitas produk yang dimuat.</p>
+                            <div id="step-2-data" class="mt-2 text-xs bg-slate-50 border border-slate-100 p-2 rounded hidden">
+                                <p><span class="font-semibold">Hasil:</span> Lolos QC (Passed)</p>
+                                <p><span class="font-semibold">Oleh:</span> Bpk. Bambang Wijaya (TTD terlampir)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Dibuat -->
+                    <div class="timeline-item flex space-x-4 relative z-10">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center bg-blue-500 text-white border-4 border-white shadow-sm mt-0.5"><i class="fas fa-file-alt text-[10px]"></i></div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-blue-800">SPM Dibuat</h4>
+                            <p class="text-xs text-slate-500 mt-1">Dibuat oleh Admin Distribusi.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="p-4 border-t bg-slate-50 rounded-b-2xl flex justify-end">
+                <button onclick="closeModal('modalTracking')" class="px-4 py-2 bg-slate-200 text-slate-700 font-semibold rounded hover:bg-slate-300 text-sm">Tutup Lacak</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PRINT PREVIEW A4 -->
+    <div id="modalPrint" class="fixed inset-0 bg-slate-900 bg-opacity-80 z-50 flex justify-center items-center hidden">
+        <div class="w-full h-full flex flex-col md:p-6">
+            
+            <!-- Print Controls -->
+            <div class="bg-white p-4 flex justify-between items-center md:rounded-t-xl no-print z-50 shadow-lg">
+                <h3 class="font-bold text-lg text-slate-800"><i class="fas fa-print mr-2"></i>Pratinjau Cetak Surat Jalan</h3>
+                <div class="space-x-2">
+                    <button onclick="closeModal('modalPrint')" class="px-4 py-2 border border-slate-300 text-slate-600 rounded hover:bg-slate-100 font-semibold text-sm">Batal</button>
+                    <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold text-sm shadow-md"><i class="fas fa-print mr-1"></i> Cetak Dokumen</button>
+                </div>
+            </div>
+
+            <!-- Printable A4 Area -->
+            <div class="flex-1 overflow-y-auto bg-slate-500 md:p-6 flex justify-center">
+                <div id="printableArea" class="bg-white w-[210mm] min-h-[297mm] p-10 shadow-2xl relative text-black" style="font-family: 'Arial', sans-serif;">
+                    
+                    <!-- Header Kop Surat -->
+                    <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+                        <div>
+                            <h1 class="text-2xl font-black tracking-tight" style="color: #004b87;">WIKA BETON</h1>
+                            <p class="text-xs font-semibold mt-1">PT WIJAYA KARYA BETON Tbk</p>
+                            <p class="text-[10px]">Pabrik Produk Beton (PCP) Sumatera Utara</p>
+                        </div>
+                        <div class="text-right">
+                            <h2 class="text-xl font-bold border border-black p-1 inline-block uppercase tracking-widest">Surat Pengantar Barang</h2>
+                            <p class="text-sm font-bold mt-2">No: SPtB-2609-001</p>
+                            <p class="text-xs">Tanggal: 15 September 2026</p>
+                        </div>
+                    </div>
+
+                    <!-- Info Proyek & Driver -->
+                    <div class="flex justify-between text-sm mb-6">
+                        <div class="w-1/2 pr-4">
+                            <p class="font-bold border-b border-gray-400 mb-1">Kepada Yth / Tujuan:</p>
+                            <p class="font-semibold uppercase">Proyek Tol Trans Sumatera Seksi 2</p>
+                            <p class="text-xs">Lokasi: Kab. Langkat, Sumatera Utara</p>
+                        </div>
+                        <div class="w-1/2 pl-4 border-l border-gray-300">
+                            <p class="font-bold border-b border-gray-400 mb-1">Informasi Pengiriman:</p>
+                            <table class="text-xs w-full">
+                                <tr><td class="py-1 w-24">Transporter</td><td class="font-semibold">: PT Lintas Andalas</td></tr>
+                                <tr><td class="py-1">Nama Driver</td><td class="font-semibold">: Hendra Saputra</td></tr>
+                                <tr><td class="py-1">No. Kendaraan</td><td class="font-semibold">: BK 8250 SK</td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Barang -->
+                    <p class="text-xs mb-1">Bersama ini kami kirimkan barang-barang sebagai berikut:</p>
+                    <table class="w-full border-collapse border border-black text-sm mb-6">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-black py-2 px-2 text-center w-12">No</th>
+                                <th class="border border-black py-2 px-2 text-center">Nama / Tipe Produk</th>
+                                <th class="border border-black py-2 px-2 text-center w-24">Jumlah</th>
+                                <th class="border border-black py-2 px-2 text-center w-24">Satuan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="border border-black py-2 px-2 text-center">1</td>
+                                <td class="border border-black py-2 px-2 font-semibold">Spun Pile ∅ 500 mm, Class B, L=12m (Bottom)</td>
+                                <td class="border border-black py-2 px-2 text-center font-bold text-lg">10</td>
+                                <td class="border border-black py-2 px-2 text-center">Batang</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Catatan Penerimaan -->
+                    <div class="border border-black p-2 mb-8 text-sm min-h-[60px]">
+                        <p class="font-bold text-xs underline mb-1">Catatan Penerima di Proyek:</p>
+                        <p class="italic text-gray-700">"Kondisi Sesuai & Baik. Aman, bongkar muat lancar. Tidak ada cacat/reject."</p>
+                    </div>
+
+                    <!-- Kolom Tanda Tangan Terpadu -->
+                    <div class="grid grid-cols-4 gap-2 text-center text-sm border-t-2 border-black pt-4">
+                        <!-- QC -->
+                        <div class="flex flex-col items-center">
+                            <p class="text-[10px] font-bold uppercase h-6">Diperiksa Oleh<br>(Tim QC Pabrik)</p>
+                            <div class="h-20 w-full flex items-center justify-center my-1 relative">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/f/f6/Signature_of_John_Hancock.svg" class="h-16 opacity-70 absolute mix-blend-multiply" alt="ttd">
+                            </div>
+                            <p class="font-bold underline text-xs">Bambang Wijaya</p>
+                            <p class="text-[9px] text-gray-500">15 Sep, 08:30 WIB</p>
+                        </div>
+                        <!-- Produksi -->
+                        <div class="flex flex-col items-center">
+                            <p class="text-[10px] font-bold uppercase h-6">Diserahkan Oleh<br>(Adm. Produksi)</p>
+                            <div class="h-20 w-full flex items-center justify-center my-1 relative">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/e/ed/Signature_of_George_Washington.svg" class="h-12 opacity-70 absolute mix-blend-multiply" alt="ttd">
+                            </div>
+                            <p class="font-bold underline text-xs">Ahmad Ridwan</p>
+                            <p class="text-[9px] text-gray-500">15 Sep, 09:00 WIB</p>
+                        </div>
+                        <!-- Driver -->
+                        <div class="flex flex-col items-center">
+                            <p class="text-[10px] font-bold uppercase h-6">Pengemudi<br>(Transporter)</p>
+                            <div class="h-20 w-full flex items-center justify-center my-1 relative">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/a/ad/Signature_of_Thomas_Jefferson.svg" class="h-14 opacity-70 absolute mix-blend-multiply" alt="ttd">
+                            </div>
+                            <p class="font-bold underline text-xs">Hendra Saputra</p>
+                            <p class="text-[9px] text-gray-500">15 Sep, 09:15 WIB</p>
+                        </div>
+                        <!-- Penerima Site -->
+                        <div class="flex flex-col items-center">
+                            <p class="text-[10px] font-bold uppercase h-6">Diterima Oleh<br>(Pihak Proyek)</p>
+                            <div class="h-20 w-full flex items-center justify-center my-1 relative">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/2/23/Signature_of_Gerald_Ford.svg" class="h-14 opacity-70 absolute mix-blend-multiply" alt="ttd">
+                            </div>
+                            <p class="font-bold underline text-xs">Agus (Mandor)</p>
+                            <p class="text-[9px] text-gray-500">15 Sep, 14:20 WIB</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Component -->
+    <div id="toastMessage" class="fixed top-5 right-5 bg-green-600 text-white font-semibold px-6 py-3 rounded shadow-lg transform transition-transform duration-300 translate-x-full z-50">
+        Pesan di sini
+    </div>
+
+    <script>
+        // Logika Login
+        function handleLogin(event) {
+            event.preventDefault();
+            const btn = event.target.querySelector('button[type="submit"]');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Memverifikasi...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                // Sembunyikan halaman login, tampilkan dashboard
+                document.getElementById('login-page').classList.add('hidden');
+                const mainApp = document.getElementById('main-app');
+                mainApp.classList.remove('hidden');
+                mainApp.classList.add('flex'); // Add flex to make layout work
+            }, 800); 
+        }
+
+        // Logika Perpindahan Tab Menu
+        function switchTab(tabName) {
+            document.getElementById('tab-dashboard').classList.add('hidden');
+            document.getElementById('tab-input').classList.add('hidden');
+            
+            document.getElementById('nav-dashboard').classList.remove('bg-blue-600', 'text-white');
+            document.getElementById('nav-dashboard').classList.add('text-slate-300');
+            document.getElementById('nav-input').classList.remove('bg-blue-600', 'text-white');
+            document.getElementById('nav-input').classList.add('text-slate-300');
+
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            document.getElementById('nav-' + tabName).classList.add('bg-blue-600', 'text-white');
+            document.getElementById('nav-' + tabName).classList.remove('text-slate-300');
+
+            if(tabName === 'dashboard') document.getElementById('pageTitle').innerText = "Monitor Pengiriman Berjalan";
+            if(tabName === 'input') document.getElementById('pageTitle').innerText = "Buat Surat Permintaan Muat (SPM)";
+        }
+
+        // Fungsi Membuka Modal Tracking (Shopee Style)
+        function openTracker(sptb, stepCompleted) {
+            document.getElementById('track-no-sptb').innerText = sptb;
+            document.getElementById('modalTracking').classList.remove('hidden');
+
+            for(let i=2; i<=5; i++) {
+                const icon = document.getElementById(`step-${i}-icon`);
+                const title = document.getElementById(`step-${i}-title`);
+                const data = document.getElementById(`step-${i}-data`);
+                
+                icon.className = "w-6 h-6 rounded-full flex items-center justify-center bg-slate-200 text-slate-400 border-4 border-white shadow-sm mt-0.5";
+                title.className = "text-sm font-bold text-slate-400";
+                if(data) data.classList.add('hidden');
+            }
+
+            for(let i=2; i<=stepCompleted; i++) {
+                const icon = document.getElementById(`step-${i}-icon`);
+                const title = document.getElementById(`step-${i}-title`);
+                const data = document.getElementById(`step-${i}-data`);
+                
+                let colorClass = (i === stepCompleted && i === 5) ? "bg-green-500 text-white" : "bg-blue-500 text-white";
+                let titleColor = (i === stepCompleted && i === 5) ? "text-green-600" : "text-blue-800";
+                
+                icon.className = `w-6 h-6 rounded-full flex items-center justify-center border-4 border-white shadow-sm mt-0.5 ${colorClass}`;
+                title.className = `text-sm font-bold ${titleColor}`;
+                if(data) data.classList.remove('hidden');
+            }
+        }
+
+        // Fungsi Modal A4 Print
+        function openPrintPreview() {
+            document.getElementById('modalPrint').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Notifikasi Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toastMessage');
+            toast.innerText = msg;
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                switchTab('dashboard'); // Kembali ke monitoring setelah simpan
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
